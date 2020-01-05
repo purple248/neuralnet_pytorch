@@ -36,7 +36,7 @@ class RNN_Net(nn.Module):
         self.n_feature = n_feature
 
         self.rnn = nn.RNN(n_feature, hidden_dim, n_layers, batch_first=True)
-        #batch_first – If True, then the input and output tensors are provided as (batch, seq, feature)
+        # batch_first – If True, then the input and output tensors are provided as (batch, seq, feature)
         self.fc = nn.Linear(hidden_dim, n_output)
 
     def forward(self, x):
@@ -44,21 +44,20 @@ class RNN_Net(nn.Module):
         hidden = self.init_hidden(batch_size)
 
         # if self.n_feature == 1:
-        #     x = x.view(batch_size, self.sequence_len, self.n_feature) #x = x.view(batch_size, self.seq_len, self.n_feature)
+        #     x = x.view(batch_size, self.sequence_len, self.n_feature)
 
         out, _ = self.rnn(x, hidden)
         out = out[:, -1, :]
+        # rnn_out will of size [batch_size, seq_len, hidden_size]
+        # Reshaping the outputs such that it can be fit into the fully connected layer
+        # out = out.contiguous().view(-1, self.hidden_dim) - for singal number y
 
-        # rnn_out will of size [batch_size, seq_len, hidden_size] #how many xs bring y?
-        # # Reshaping the outputs such that it can be fit into the fully connected layer
-        # out = out.contiguous().view(-1, self.hidden_dim)
-        out = self.fc(out) #self.linear(rnn_out.view(-1, hidden_size))
+        out = self.fc(out)
         return out
 
     def init_hidden(self, batch_size):
         # This method generates the first hidden state of zeros which we'll use in the forward pass
         hidden = torch.zeros(self.n_layers, batch_size, self.hidden_dim)
-        # We'll send the tensor holding the hidden state to the device we specified earlier as well
         return hidden
 
 
@@ -82,11 +81,12 @@ class LSTM_Net(nn.Module):
 
         batch_size = x.size(0)
         hidden = self.init_hidden(batch_size) #if we do shuffle
+
         # if self.n_feature == 1:
         #     x = x.view(batch_size, self.sequence_len, self.n_feature)
 
         out, _ = self.lstm(input=x, hx=hidden)
-        # rnn_out will of size [batch_size, seq_len, hidden_size] #how many xs bring y?
+        # rnn_out will of size [batch_size, seq_len, hidden_size]
 
         out = out[:, -1, :]
         out = self.fc(out)
@@ -95,8 +95,7 @@ class LSTM_Net(nn.Module):
         return out
 
     def init_hidden(self, batch_size):
-        # This method generates the first hidden state of zeros which we'll use in the forward pass
+        # this method generates the first hidden state of zeros to use in the forward pass
         hidden_state = torch.zeros(self.n_layers, batch_size, self.hidden_dim)
         cell_state = torch.zeros(self.n_layers, batch_size, self.hidden_dim)
-        # We'll send the tensor holding the hidden state to the device we specified earlier as well
         return (hidden_state, cell_state)
