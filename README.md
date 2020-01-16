@@ -1,4 +1,4 @@
-# Simple LSTM neural net and RNN (Pytorch), with parameters optimization
+# Simple LSTM neural net and RNN, with parameters optimization
 
 This project contains the following codes files:
 
@@ -15,8 +15,11 @@ This project contains the following codes files:
 - main:
 
     Contains functions to prepare the data for training (normalization, generating windows)
+
     Choosing the parameters to loop for each parameters combination (one of them is the window len)
+
     Training the net and printing results during training
+
     Save the trained model
 
 
