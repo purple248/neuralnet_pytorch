@@ -1,4 +1,4 @@
-# Simple LSTM neural net and RNN with Pytorch with parameters optimization
+# Simple LSTM neural net and RNN (Pytorch), with parameters optimization
 
 This project contains the following codes files:
 
