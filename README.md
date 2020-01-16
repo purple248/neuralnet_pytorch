@@ -3,16 +3,16 @@
 This project contains the following codes files:
 
 
-- data_generation:  creating a time series data with autocorrelation
+- *data_generation:*  creating a time series data with autocorrelation
 
 
-- simple_neural_net_models: contains simple nets: dense net (not in use), RNN, LSTM
+- *simple_neural_net_models:* contains simple nets: dense net (not in use), RNN, LSTM
 
 
-- params_optimization: a program to run through different parameter combination and tracking the loss for saving results
+- *params_optimization:* a program to run through different parameter combination and tracking the loss for saving results
 
 
-- main:
+- *main:*
 
     Contains functions to prepare the data for training (normalization, generating windows)
 
@@ -23,6 +23,6 @@ This project contains the following codes files:
     Save the trained model
 
 
-- models_testing: load the trained model and see results on the test data
+- *models_testing:* load the trained model and see results on the test data
 
 
