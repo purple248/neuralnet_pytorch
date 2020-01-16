@@ -1,7 +1,6 @@
 import torch
 import torch.utils.data as Data
 import numpy as np
-import math
 import time
 from collections import OrderedDict
 from params_optimization import RunBuilder, RunManager
@@ -29,35 +28,42 @@ def sliding_windows(data, seq_length,one_feature = False):
             row_y = data[i + seq_length]
         else:
             row_y = data[i+seq_length,0] #to predict only the next value in the first column
-
         x.append(row_x)
         y.append(row_y)
 
     return np.array(x), np.array(y)
 
-def window_gen(data_name, data, sequence_len, train_ratio=0.7,one_feature = False):
+
+def window_gen(data_name, data, sequence_len, train_ratio=0.7,one_feature = True):
+    '''
+    The main pre-processing function that contains train-test split, normalization and the windows generation.
+    :param data_name: data name for saving test raw signal for later testing
+    :param data: the initial data
+    :param sequence_len: len of the windows
+    :param train_ratio: for train-test split
+    :param one_feature: if we want to predict only a one feature
+    :return: sliding windows of normelized x and y in torch.tensor format
+    '''
     split_point = int(data.shape[0] * train_ratio)
     if one_feature:
         data_train = data[:split_point]
         data_test = data[split_point:]
         data_train = data_train.reshape(-1, 1)
         data_test = data_test.reshape(-1, 1)
-
     else:
         data_train = data[:split_point, :]
         data_test = data[split_point:, :]
 
-    #normalize X:
+    #normalize X according train data:
     scaler = normalize_data(data_train, one_feature)
     data_train = scaler.transform(data_train)
     data_test = scaler.transform(data_test)
 
-
+    #do sliding windows
     X_train, y_train = sliding_windows(data_train, sequence_len)
     X_test, y_test = sliding_windows(data_test, sequence_len)
 
-
-    #save test raw_signal for future performance checking
+    #save test signal with windows for future performance checking
     import pickle
     x_file_name = data_name + f"x_test_with_sliding_window_{sequence_len}.pickle"
     y_file_name = data_name + "y_test" + ".pickle"
@@ -73,20 +79,22 @@ def window_gen(data_name, data, sequence_len, train_ratio=0.7,one_feature = Fals
            torch.tensor(y_test, dtype=torch.float32)
 
 
+
+
 # to read saved data:
 import pickle
 with open("../data/generated_data.pickel", 'rb') as handle:
     generated_data = pickle.load(handle)
 signal = generated_data
 
-#choosing the params for looping each possible combination:
+#choosing the params for looping each possible combination (defined a set of parameters and values inside an dictionary)
 params = OrderedDict(
-    lr=[.01], #lr=[.01, .001],
+    lr=[.01, .001],
     batch_size=[20,50],
     num_workers=[2],
     hidden_size=[10],
     num_epochs = [20],
-    sequence_len = [10]
+    sequence_len = [5,10]
 )
 
 #change the names for saving results:
@@ -95,21 +103,21 @@ model_name = "_lstm_trained_on_" + data_name
 
 m = RunManager()
 
-for run in RunBuilder.get_runs(params):
+for run in RunBuilder.get_runs(params): #loop throgh the different params combinations
 
     X_train, X_test, y_train, y_test = window_gen(data_name, signal, run.sequence_len,one_feature = True)
+    # prepering the loader for the net:
     torch_dataset_train = Data.TensorDataset(X_train, y_train)
+    train_loader = Data.DataLoader(dataset=torch_dataset_train, batch_size=run.batch_size, shuffle=True, num_workers=run.num_workers)
 
     net = LSTM_Net(n_feature=1, n_output=1, hidden_dim=run.hidden_size, n_layers=1, sequence_len=run.sequence_len)
-    #or check RNN rez:
+    #or check RNN:
     #net = RNN_Net(n_feature=1, n_output=1, hidden_dim=run.hidden_size, n_layers=1, sequence_len=run.sequence_len)
 
-    train_loader = Data.DataLoader(dataset=torch_dataset_train, batch_size=run.batch_size, shuffle=True, num_workers=run.num_workers)
     optimizer = torch.optim.SGD(net.parameters(), lr=run.lr)
     loss_func = torch.nn.MSELoss()
 
     m.begin_run(run, net, train_loader)
-
     print(f"\n^^^^^ the hyper params: {run} ^^^^")
     train_initial_loss = loss_func(torch.squeeze(net(X_train)), torch.squeeze(y_train))
     print("loss before tarining: {}".format(train_initial_loss.item()))
@@ -130,10 +138,10 @@ for run in RunBuilder.get_runs(params):
 
         if epoch % 10 == 0 or epoch == (run.num_epochs - 1):
             train_loss = loss_func(torch.squeeze(net(X_train)), torch.squeeze(y_train))
-            print(f"train loss for params {run}: {train_loss.item()}")
+            print(f"train loss for epoch {epoch}: {train_loss.item()}")
 
             test_loss = loss_func(torch.squeeze(net(X_test)), torch.squeeze(y_test))
-            print(f"test loss for params {run}: {test_loss.item()}")
+            print(f"test loss for epoch {epoch}: {test_loss.item()}")
 
             print("**end epoch**")
 
@@ -143,7 +151,7 @@ for run in RunBuilder.get_runs(params):
 
     print(f"train time: {time.time() - m.run_start_time }" )
 
-    #saving model:
+    # saving model:
     file_name = "model" + model_name + f"params: {run}.pth"
     directory = "../trained_models/"
     path = directory + file_name
@@ -152,7 +160,7 @@ for run in RunBuilder.get_runs(params):
 
     m.end_run()
 
-#save results:
+# save results:
 # m.save('../results/results ' + model_name)
 
-#m.print_results()
+# m.print_results() #uncomment to see full table results

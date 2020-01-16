@@ -1,13 +1,13 @@
 import pandas as pd
 import time
 import json
-import torch
 from itertools import product
 from collections import namedtuple
 from collections import OrderedDict
 
 class RunBuilder():
-
+    # generate multiple runs with varying parameters,
+    # each set of parameters will be used in each run, until all combinations are covered
     @staticmethod
     def get_runs(params):
         Run = namedtuple('Run', params.keys())
@@ -18,6 +18,8 @@ class RunBuilder():
 
 
 class RunManager():
+    # start, manage and end each run
+    # tracking important data - running time, loss results, with option to save/print the results
     def __init__(self):
         self.epoch_count = 0
         self.epoch_loss = 0
@@ -29,19 +31,12 @@ class RunManager():
         self.run_data = []
         self.run_start_time = None
 
-        self.network = None
-        self.loader = None
 
     def begin_run(self, run, network, loader):
-        self.run_start_time = time.time()
-
+        # start run with set of parameters
         self.run_params = run
+        self.run_start_time = time.time()
         self.run_count += 1
-
-        self.network = network
-        self.loader = loader
-
-        X, y = next(iter(self.loader))
 
     def end_run(self):
         self.epoch_count = 0
@@ -50,14 +45,14 @@ class RunManager():
         self.epoch_start_time = time.time()
         self.epoch_count += 1
         self.epoch_loss = 0
-        self.epoch_num_correct = 0
+        # self.epoch_num_correct = 0 # for classification problems
 
     def end_epoch(self): #saving epoch results
         epoch_duration = time.time() - self.epoch_start_time
         run_duration = time.time() - self.run_start_time
-
         loss = self.epoch_loss
 
+        #tracking results:
         results = OrderedDict()
         results["run"] = self.run_count
         results["epoch"] = self.epoch_count
@@ -99,5 +94,5 @@ class RunManager():
 
     def print_results(self):
         df = pd.DataFrame.from_dict(self.run_data, orient='columns')
-        print("results")
+        print("results - train and test loss calculated in each 10 epochs")
         print(df.to_string()) #print full table

@@ -2,6 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import pickle
 
+# change the file name according the data and model to load
 x_file_name = 'generated_data_x_test_with_sliding_window_10.pickle'
 y_file_name = 'generated_data_y_test.pickle'
 
